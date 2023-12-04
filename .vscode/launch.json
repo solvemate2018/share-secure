@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ShareSecureApplication<share-secure>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.sharesecure.sharesecure.ShareSecureApplication",
+            "projectName": "share-secure",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
