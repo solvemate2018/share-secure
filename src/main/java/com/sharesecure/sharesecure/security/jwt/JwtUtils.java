@@ -1,6 +1,8 @@
 package com.sharesecure.sharesecure.security.jwt;
 
 import io.jsonwebtoken.*;
+import lombok.extern.slf4j.Slf4j;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,18 +16,21 @@ import java.util.Date;
 import javax.crypto.SecretKey;
 
 @Component
+@Slf4j
 public class JwtUtils {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
     private SecretKey jwtSecret = Jwts.SIG.HS512.key().build();
 
-    @Value("${app.jwtExpirationMs}")
-    private int jwtExpirationMs;
+    private int jwtExpirationMs = 2000000;
 
     @Value("${server.port}")
     private int serverPort;
 
-    private final String jwtIssuer = "http://localhost:"+ serverPort + "/";
+    @Value("${server.url}")
+    private String serverURL;
+
+    private final String jwtIssuer = serverURL + ":"+ serverPort + "/";
 
     private final JwtParser parser = Jwts.parser().requireIssuer(jwtIssuer).verifyWith(jwtSecret)
     .build();
@@ -37,7 +42,7 @@ public class JwtUtils {
 
         Date exp = new Date((new Date()).getTime() + jwtExpirationMs);
 
-        return Jwts.builder()
+        String JWT = Jwts.builder()
         .issuer(jwtIssuer)
         .claims()
         .subject(userPrincipal.getUsername())
@@ -46,6 +51,10 @@ public class JwtUtils {
         .and()
         .signWith(jwtSecret)
         .compact();
+
+        log.info("JWT generated:" + JWT);
+
+        return JWT;
     }
 
     public String getUserEmailFromJwtToken(String token){
@@ -66,6 +75,7 @@ public class JwtUtils {
 		try {
             // file deepcode ignore JwtVerificationBypass: <please specify a reason of ignoring this>
             parser.parse(token);
+            log.info("JWT Valid");
 			return true;
 		} catch (MalformedJwtException e) {
 			logger.error("Invalid JWT token: {}", e.getMessage());

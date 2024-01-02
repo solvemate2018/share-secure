@@ -1,14 +1,10 @@
 package com.sharesecure.sharesecure.rest.users;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -18,64 +14,117 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sharesecure.sharesecure.entities.User;
+import com.sharesecure.sharesecure.entities.folder.RootFolder;
+import com.sharesecure.sharesecure.repositories.FolderRepo;
 import com.sharesecure.sharesecure.repositories.UserRepo;
 import com.sharesecure.sharesecure.security.jwt.JwtUtils;
 import com.sharesecure.sharesecure.security.payload.request.LoginRequest;
 import com.sharesecure.sharesecure.security.payload.request.SignupRequest;
 import com.sharesecure.sharesecure.security.payload.response.JwtResponse;
-import com.sharesecure.sharesecure.security.payload.response.MessageResponse;
 import com.sharesecure.sharesecure.security.services.UserDetailsImpl;
+import com.sharesecure.sharesecure.services.utils.fileio.FileIOServiceInterface;
+import com.sharesecure.sharesecure.services.utils.validation.ValidationServiceInterface;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
+
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/auth")
-public class AuthController {
-	static final String ROLE_NOT_FOUND_MESSAGE = "Error: Role is not found.";
+@Slf4j
+public class AuthController implements AuthControllerInterface {
+	@Autowired
+	AuthenticationManager authenticationManager;
 
 	@Autowired
-    AuthenticationManager authenticationManager;
+	private PasswordEncoder encoder;
 
 	@Autowired
-    PasswordEncoder encoder;
+	private UserRepo userRepo;
 
 	@Autowired
-	UserRepo userRepo;
+	private FolderRepo folderRepo;
 
 	@Autowired
-	JwtUtils jwtUtils;
+	private JwtUtils jwtUtils;
+
+	@Autowired
+	private ValidationServiceInterface validationService;
+
+	@Autowired
+	private FileIOServiceInterface fileIOService;
 
 	@PostMapping("/signin")
 	public ResponseEntity<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+		log.info("Login request received");
 
 		Authentication authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-
 		SecurityContextHolder.getContext().setAuthentication(authentication);
+
+		log.info("User successfully authenticated");
+
 		String jwt = jwtUtils.generateJwtToken(authentication);
-		
+
+		log.info("JWT generated");
+
 		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
 		return ResponseEntity.ok(new JwtResponse(jwt,
-												 userDetails.getId(), 
-												 userDetails.getEmail()));
+				userDetails.getId(),
+				userDetails.getEmail()));
 	}
 
 	@PostMapping("/signup")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) throws Exception {
 		if (userRepo.existsByEmail(signUpRequest.getEmail())) {
+			log.error("User already exists.");
 			throw new Exception("Email is already taken");
 		}
 
-		User user = new User();
-		user.setEmail(signUpRequest.getEmail());
-		user.setPassword(encoder.encode(signUpRequest.getPassword()));
-        user.setFirstName(signUpRequest.getFirstName());
-        user.setLastName(signUpRequest.getLastName());
+		try {
+			// Create User Root Folder
+			String sterilizedUserFolder = validationService.sanitizeEmail(signUpRequest.getEmail());
+			fileIOService.createDir(sterilizedUserFolder);
+			log.info("User root folder created");
 
-		userRepo.save(user);
+			// Create the User Entity
+			User user = new User();
+			user.setEmail(signUpRequest.getEmail());
+			user.setPassword(encoder.encode(signUpRequest.getPassword()));
+			user.setFirstName(signUpRequest.getFirstName());
+			user.setLastName(signUpRequest.getLastName());
 
-		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+			log.info("User entity created:" + user);
+
+			RootFolder rootFolder = new RootFolder();
+
+			rootFolder.setFolderNormalizedName(sterilizedUserFolder);
+			rootFolder.setFolderOwner(user);
+
+			log.info("Root folder entity created:" + rootFolder);
+
+			userRepo.save(user);
+			folderRepo.save(rootFolder);
+
+			log.info("User and Root folder saved in the DB.");
+
+			return authenticateUser(new LoginRequest(signUpRequest.getEmail(), signUpRequest.getPassword()));
+
+		} catch (Exception exception) {
+			log.error("Something went wrong, further investigation required.");
+			return ResponseEntity.badRequest().body(exception.getMessage());
+		}
 	}
+
+
+	@Override
+	@GetMapping("/csrf")
+	public ResponseEntity<?> getCSRF() {
+		return ResponseEntity.ok().build();
+	}
+	
 }

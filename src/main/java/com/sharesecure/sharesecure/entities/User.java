@@ -1,9 +1,11 @@
 package com.sharesecure.sharesecure.entities;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 
 import org.hibernate.validator.constraints.UniqueElements;
+
+import com.sharesecure.sharesecure.entities.folder.Folder;
+import com.sharesecure.sharesecure.entities.folder.RootFolder;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -31,15 +33,9 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Collection<UserFileMapping> accessibleFiles = new ArrayList<UserFileMapping>();
+    @OneToOne(mappedBy = "folderOwner")
+    private RootFolder rootFolder;
 
-    public boolean hasAccessToFile(String fileName){
-        for (UserFileMapping userFileMapping : accessibleFiles) {
-            if(userFileMapping.getFileMetaData().getFileName() == fileName){
-                return true;
-            }
-        }
-        return false;
-    }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Collection<UserPrivilege> accessibleContent = new ArrayList<>();
 }

@@ -5,12 +5,11 @@ import com.sharesecure.sharesecure.entities.User;
 
 import lombok.EqualsAndHashCode;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.*;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @EqualsAndHashCode
 public class UserDetailsImpl implements UserDetails {
@@ -24,7 +23,6 @@ public class UserDetailsImpl implements UserDetails {
 
 	private final Collection<? extends GrantedAuthority> authorities;
 
-	//public UserDetailsImpl(Long id, String username, String email, String password,
 	public UserDetailsImpl(Long id, String email, String password,
 			Collection<? extends GrantedAuthority> authorities) {
 		this.id = id;
@@ -34,10 +32,7 @@ public class UserDetailsImpl implements UserDetails {
 	}
 
 	public static UserDetailsImpl build(User user) {
-		List<GrantedAuthority> authorities = user.getAccessibleFiles()
-				.stream()
-				.map(file -> new SimpleGrantedAuthority(file.getFileMetaData().getFileName()))
-				.collect(Collectors.toList());
+		List<GrantedAuthority> authorities = new ArrayList<>();
 
 		return new UserDetailsImpl(
 				user.getId(),
