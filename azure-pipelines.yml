@@ -49,3 +49,7 @@ steps:
     jdkVersionOption: '2.1'
     jdkArchitectureOption: 'x64'
     goals: 'package'
+  env:
+    JAVA_HOME: '/opt/hostedtoolcache/jdk21/JAVA_HOME_21_X64_s/jdk-21_windows-x64_bin_zip/jdk-21.0.1'
+    PATH: '/opt/hostedtoolcache/jdk21/JAVA_HOME_21_X64_s/jdk-21_windows-x64_bin_zip/jdk-21.0.1/bin:$PATH'
+
