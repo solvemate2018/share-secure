@@ -32,7 +32,8 @@ steps:
     jdkDestinationDirectory: '$(agent.toolsDirectory)/jdk21'
 
 
-- script: 'export JAVA_HOME=$(agent.ToolsDirectory)/jdk21/$(agent.OSArchitecture)/jdk2.1.0_<version>'
+- script: 'export JAVA_HOME=$(agent.ToolsDirectory)/jdk21/JAVA_HOME_21_X64_s/jdk-21_windows-x64_bin_zip/jdk-21.0.1'
+
   displayName: 'Set JAVA_HOME'
 
 - task: Maven@3
