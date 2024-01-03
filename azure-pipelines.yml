@@ -32,12 +32,15 @@ steps:
     jdkDestinationDirectory: '$(agent.toolsDirectory)/jdk21'
 
 
+- script: 'export JAVA_HOME=$(agent.ToolsDirectory)/jdk21/$(agent.OSArchitecture)/jdk2.1.0_<version>'
+  displayName: 'Set JAVA_HOME'
+
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
     publishJUnitResults: true
     javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.17'
+    jdkVersionOption: '2.1'
     jdkArchitectureOption: 'x64'
     goals: 'package'
