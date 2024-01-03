@@ -38,6 +38,8 @@ steps:
   env:
     JAVA_HOME_2_X64: '/opt/hostedtoolcache/jdk21/JAVA_HOME_21_X64_s/jdk-21_windows-x64_bin_zip/jdk-21.0.1'
 
+- script: echo "##vso[task.setvariable variable=JAVA_HOME_2_X64]/opt/hostedtoolcache/jdk21/JAVA_HOME_21_X64_s/jdk-21_windows-x64_bin_zip/jdk-21.0.1"
+  displayName: 'Set JAVA_HOME_2_X64'
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
