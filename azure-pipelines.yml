@@ -10,11 +10,32 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+- powershell: |
+   $source = "https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.zip"
+   $destination = "$(build.sourcesdirectory)\jdk-21_windows-x64_bin.zip"
+   $client = new-object System.Net.WebClient 
+   $cookie = "oraclelicense=accept-securebackup-cookie"
+   $client.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie) 
+   $client.downloadFile($source, $destination)
+  displayName: 'PowerShell Script'
+
+- task: JavaToolInstaller@0
+  displayName: 'Use Java 21'
+  inputs:
+    versionSpec: 21
+    jdkArchitectureOption: x64
+    jdkSourceOption: LocalDirectory
+    jdkFile: '$(build.sourcesdirectory)\jdk-21_windows-x64_bin.zip'
+    jdkDestinationDirectory: '$(agent.toolsDirectory)/jdk21'
+
+
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
     publishJUnitResults: true
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.21'
+    jdkArchitectureOption: 'x64'
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'package'
-    options: '-J-Djava.version=21'
